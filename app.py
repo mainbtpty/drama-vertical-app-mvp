@@ -1,4 +1,3 @@
-
 import streamlit as st
 import sqlite3
 import hashlib
@@ -138,9 +137,26 @@ elif page == "User View (Vertical App)":
     cursor.execute("SELECT id, title, genre, description, local_path, thumbnail_path FROM videos")
     videos = cursor.fetchall()
     if not videos:
-        st.info("No episodes available yet. Check back soon!")
+        st.info("No episodes available yet. Showing a sample vertical drama clip for demo purposes.")
+        # Hardcoded sample video URL for demo (short 15-second clip)
+        sample_video_url = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4"
+        sample_title = "Sample Episode: The Meltdown"
+        sample_genre = "Drama"
+        sample_description = "A tense moment—will he break down? (Demo clip)"
+        
+        # Display hardcoded vertical video
+        st.markdown(f"""
+            <div class="video-container">
+                <video controls autoplay loop>
+                    <source src="{sample_video_url}" type="video/mp4">
+                </video>
+            </div>
+            <h3>{sample_title}</h3>
+            <p><b>Genre:</b> {sample_genre}</p>
+            <p><b>Description (Cliffhanger):</b> {sample_description}</p>
+        """, unsafe_allow_html=True)
     else:
-        # Initialize session state for current video
+        # Original code for uploaded videos
         if "current_video_index" not in st.session_state:
             st.session_state.current_video_index = 0
 
@@ -172,7 +188,6 @@ elif page == "User View (Vertical App)":
         st.subheader("Browse Episodes")
         for idx, v in enumerate(videos):
             v_id, v_title, v_genre, v_desc, v_path, v_thumb = v
-            # Display thumbnail if available
             if os.path.exists(v_thumb):
                 st.image(v_thumb, caption=v_title, use_column_width=True)
             if st.button(f"{v_title} ({v_genre}) - {v_desc[:50]}...", key=f"episode_{v_id}"):
