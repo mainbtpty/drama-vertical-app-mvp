@@ -1,219 +1,114 @@
 import streamlit as st
-import sqlite3
-import hashlib
-import os
-from moviepy.editor import VideoFileClip
-from PIL import Image
-from io import BytesIO
-import base64
-import time
 
-# Initialize directories
-os.makedirs("videos", exist_ok=True)
-os.makedirs("thumbnails", exist_ok=True)
+# Page config for mobile-like layout
+st.set_page_config(page_title="ReelShort Clone MVP", layout="centered", initial_sidebar_state="collapsed")
 
-# Hardcoded admin password (change this for security in real use)
-ADMIN_PASSWORD = "admin123"
+# Hardcoded 4 videos (20-second drama clips from free Pexels sources via CDN)
+videos = [
+    {
+        "url": "https://assets.mixkit.co/videos/preview/mixkit-portrait-of-a-woman-in-a-pool-12493-large.mp4",  # Emotional woman in water (drama feel)
+        "title": "Episode 1: The Secret",
+        "genre": "Drama",
+        "description": "She dives into danger... will she surface with the truth? (20s cliffhanger)"
+    },
+    {
+        "url": "https://assets.mixkit.co/videos/preview/mixkit-woman-walking-in-the-city-469-large.mp4",  # Woman walking in city (tense narrative)
+        "title": "Episode 2: Shadows Follow",
+        "genre": "Thriller",
+        "description": "Every step echoes her past... who's watching? (20s cliffhanger)"
+    },
+    {
+        "url": "https://assets.mixkit.co/videos/preview/mixkit-man-sitting-in-profile-123-large.mp4",  # Man in contemplation (emotional drama)
+        "title": "Episode 3: Broken Promises",
+        "genre": "Drama",
+        "description": "One call changes everything... can he forgive? (20s cliffhanger)"
+    },
+    {
+        "url": "https://assets.mixkit.co/videos/preview/mixkit-portrait-of-a-girl-blowing-hair-1245-large.mp4",  # Girl in wind (romantic tension)
+        "title": "Episode 4: Winds of Change",
+        "genre": "Romance",
+        "description": "The breeze whispers secrets... will she listen? (20s cliffhanger)"
+    }
+]
 
-# Initialize SQLite database
-conn = sqlite3.connect("videos.db", check_same_thread=False)
-cursor = conn.cursor()
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS videos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        genre TEXT,
-        description TEXT,
-        local_path TEXT,
-        thumbnail_path TEXT,
-        duration INTEGER
-    )
-""")
-conn.commit()
-
-# Helper functions
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def split_and_trim_video(input_path, title, duration=60):
-    try:
-        clip = VideoFileClip(input_path)
-        video_duration = int(clip.duration)
-        episodes = []
-        start = 0
-        part_num = 1
-        total_parts = (video_duration + duration - 1) // duration  # Ceiling division
-        progress_bar = st.progress(0)
-        for i in range(total_parts):
-            end = min(start + duration, video_duration)
-            trimmed_path = f"videos/{title}_part{part_num}.mp4"
-            with st.spinner(f"Trimming part {part_num}/{total_parts}..."):
-                subclip = clip.subclip(start, end)
-                subclip.write_videofile(trimmed_path, codec="libx264", verbose=False)
-                thumbnail_path = f"thumbnails/{title}_part{part_num}.jpg"
-                generate_thumbnail(trimmed_path, thumbnail_path)
-                episodes.append((trimmed_path, thumbnail_path, end - start))
-                start += duration
-                part_num += 1
-                progress_bar.progress((i + 1) / total_parts)
-                time.sleep(0.1)  # Small delay for UI update
-        clip.close()
-        return episodes
-    except Exception as e:
-        st.error(f"Error splitting and trimming video: {e}")
-        return None
-    finally:
-        progress_bar.empty()
-
-def generate_thumbnail(video_path, output_path):
-    try:
-        clip = VideoFileClip(video_path)
-        frame = clip.get_frame(1)  # Get frame at 1 second
-        img = Image.fromarray(frame)
-        img.save(output_path)
-        clip.close()
-        return output_path
-    except Exception as e:
-        st.error(f"Error generating thumbnail: {e}")
-        return None
-
-# Streamlit app
-st.set_page_config(page_title="Drama Vertical App MVP", layout="centered")
-
-# CSS for vertical video player (9:16 aspect ratio)
+# CSS for ReelShort-like mobile UI (dark theme, vertical player, icons)
 st.markdown("""
     <style>
-        .video-container {
-            width: 100%;
-            max-width: 360px;
-            aspect-ratio: 9 / 16;
-            margin: auto;
-            background: black;
-            overflow: hidden;
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .episode-list {
-            margin-top: 20px;
-        }
-        .episode-item {
-            cursor: pointer;
-            padding: 10px;
-            border-bottom: 1px solid #ccc;
-        }
-        .episode-item:hover {
-            background-color: #f0f0f0;
-        }
+        .main { max-width: 360px; margin: auto; background-color: #000; color: #fff; }
+        .header { background-color: #000; padding: 10px; border-bottom: 1px solid #333; }
+        .search-bar { width: 100%; padding: 8px; background: #222; border: none; border-radius: 20px; color: #fff; }
+        .nav-tabs { display: flex; justify-content: space-around; background: #111; padding: 10px; }
+        .nav-tab { color: #fff; background: none; border: none; padding: 8px 12px; cursor: pointer; }
+        .nav-tab.active { border-bottom: 2px solid #ff4d4d; }
+        .video-container { width: 100%; aspect-ratio: 9/16; background: #000; margin: 20px 0; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .episode-info { padding: 10px; background: #111; margin-bottom: 20px; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 360px; background: #000; display: flex; justify-content: space-around; padding: 10px; border-top: 1px solid #333; }
+        .bottom-icon { color: #fff; font-size: 24px; cursor: pointer; }
+        .dummy-placeholder { text-align: center; padding: 40px; color: #888; }
     </style>
 """, unsafe_allow_html=True)
 
-# Sidebar for navigation
-page = st.sidebar.selectbox("Select Page", ["User View (Vertical App)", "Admin Dashboard"])
+# Header with search bar
+st.markdown('<div class="header"><input type="text" class="search-bar" placeholder="Search shows..."></div>', unsafe_allow_html=True)
 
-if page == "Admin Dashboard":
-    st.header("Admin Dashboard - Upload & Manage Episodes")
-    password = st.text_input("Enter Admin Password", type="password")
-    if password and hash_password(password) == hash_password(ADMIN_PASSWORD):
-        st.subheader("Upload New Episode")
-        with st.form("upload_form"):
-            title = st.text_input("Episode Title")
-            genre = st.selectbox("Genre", ["Drama", "Comedy", "Telenovela", "Animation"])
-            description = st.text_area("Description (e.g., Cliffhanger Ending Note)")
-            video_file = st.file_uploader("Upload Video (MP4, max 10MB)", type=["mp4"])
-            submit = st.form_submit_button("Upload and Split into 60s Episodes")
-            if submit and video_file and title and description:
-                # Check file size (Codespaces limit)
-                file_size = video_file.size / (1024 * 1024)  # Convert to MB
-                if file_size > 10:
-                    st.error("File too large! Please upload an MP4 under 10MB.")
-                else:
-                    with st.spinner("Uploading video..."):
-                        temp_path = f"temp_{title}.mp4"
-                        with open(temp_path, "wb") as f:
-                            f.write(video_file.read())
-                    # Split and trim video
-                    episodes = split_and_trim_video(temp_path, title, duration=60)
-                    if episodes:
-                        for i, (trimmed_path, thumbnail_path, ep_duration) in enumerate(episodes, 1):
-                            ep_title = f"{title} Part {i}"
-                            ep_description = f"{description} (Part {i})"
-                            cursor.execute(
-                                "INSERT INTO videos (title, genre, description, local_path, thumbnail_path, duration) VALUES (?, ?, ?, ?, ?, ?)",
-                                (ep_title, genre, ep_description, trimmed_path, thumbnail_path, ep_duration)
-                            )
-                            conn.commit()
-                        st.success(f"Video '{title}' split into {len(episodes)} episodes and uploaded!")
-                        os.remove(temp_path)  # Clean up temp file
-    else:
-        if password:
-            st.error("Incorrect password.")
-        else:
-            st.info("Please enter the admin password to access the dashboard.")
+# Navigation tabs (dummy)
+tab_names = ["Popular", "New", "Ranking", "Categories", "Asian"]
+selected_tab = st.selectbox("Navigation", tab_names, key="nav_tab", format_func=lambda x: x)  # Dummy selectbox styled as tabs
 
-elif page == "User View (Vertical App)":
-    st.header("Drama Vertical App MVP - Short-Form Episodes")
-    cursor.execute("SELECT id, title, genre, description, local_path, thumbnail_path FROM videos")
-    videos = cursor.fetchall()
-    if not videos:
-        st.info("No episodes available yet. Showing a sample vertical drama clip for demo purposes.")
-        # Hardcoded sample video URL for demo (short 15-second clip)
-        sample_video_url = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4"
-        sample_title = "Sample Episode: The Meltdown"
-        sample_genre = "Drama"
-        sample_description = "A tense moment—will he break down? (Demo clip)"
-        
-        # Display hardcoded vertical video
-        st.markdown(f"""
-            <div class="video-container">
-                <video controls autoplay loop>
-                    <source src="{sample_video_url}" type="video/mp4">
-                </video>
-            </div>
-            <h3>{sample_title}</h3>
-            <p><b>Genre:</b> {sample_genre}</p>
-            <p><b>Description (Cliffhanger):</b> {sample_description}</p>
-        """, unsafe_allow_html=True)
-    else:
-        # Original code for uploaded videos
-        if "current_video_index" not in st.session_state:
-            st.session_state.current_video_index = 0
+# Dummy tab content (same video feed for all)
+st.markdown('<div class="nav-tabs">', unsafe_allow_html=True)
+for tab in tab_names:
+    active_class = "nav-tab active" if tab == selected_tab else "nav-tab"
+    st.markdown(f'<button class="{active_class}">{tab}</button>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-        video = videos[st.session_state.current_video_index]
-        video_id, title, genre, description, local_path, thumbnail_path = video
-        
-        # Display vertical video player
-        st.markdown(f"""
-            <div class="video-container">
-                <video controls autoplay loop>
-                    <source src="data:video/mp4;base64,{base64.b64encode(open(local_path, 'rb').read()).decode()}" type="video/mp4">
-                </video>
-            </div>
-            <h3>{title}</h3>
-            <p><b>Genre:</b> {genre}</p>
-            <p><b>Description (Cliffhanger):</b> {description}</p>
-        """, unsafe_allow_html=True)
+# Main video feed (hardcoded 4 videos, vertical play)
+if "current_video_index" not in st.session_state:
+    st.session_state.current_video_index = 0
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Previous Episode"):
-                st.session_state.current_video_index = (st.session_state.current_video_index - 1) % len(videos)
-                st.rerun()
-        with col2:
-            if st.button("Next Episode"):
-                st.session_state.current_video_index = (st.session_state.current_video_index + 1) % len(videos)
-                st.rerun()
+video = videos[st.session_state.current_video_index]
+st.markdown(f"""
+    <div class="video-container">
+        <video controls autoplay loop muted>
+            <source src="{video['url']}" type="video/mp4">
+        </video>
+    </div>
+    <div class="episode-info">
+        <h3>{video['title']}</h3>
+        <p><strong>Genre:</strong> {video['genre']}</p>
+        <p><strong>Cliffhanger:</strong> {video['description']}</p>
+    </div>
+""", unsafe_allow_html=True)
 
-        st.subheader("Browse Episodes")
-        for idx, v in enumerate(videos):
-            v_id, v_title, v_genre, v_desc, v_path, v_thumb = v
-            if os.path.exists(v_thumb):
-                st.image(v_thumb, caption=v_title, use_column_width=True)
-            if st.button(f"{v_title} ({v_genre}) - {v_desc[:50]}...", key=f"episode_{v_id}"):
-                st.session_state.current_video_index = idx
-                st.rerun()
+# Navigation buttons (dummy swipe simulation)
+col1, col2 = st.columns([1, 1])
+with col1:
+    if st.button("← Previous"):
+        st.session_state.current_video_index = (st.session_state.current_video_index - 1) % len(videos)
+        st.rerun()
+with col2:
+    if st.button("Next →"):
+        st.session_state.current_video_index = (st.session_state.current_video_index + 1) % len(videos)
+        st.rerun()
 
-# Close database connection when app stops (optional, but good practice)
-conn.close()
+# Bottom navigation bar with icons (dummy)
+st.markdown("""
+    <div class="bottom-nav">
+        <span class="bottom-icon">🏠</span> <!-- Home -->
+        <span class="bottom-icon">❤️</span> <!-- For You -->
+        <span class="bottom-icon">📋</span> <!-- My List -->
+        <span class="bottom-icon">⭐</span> <!-- Rewards -->
+        <span class="bottom-icon">👤</span> <!-- Profile -->
+    </div>
+""", unsafe_allow_html=True)
+
+# Dummy functionality for bottom icons (placeholders)
+if st.button("Home (Dummy)"): st.write("Home: Discover trending series.")
+if st.button("For You (Dummy)"): st.write("For You: Personalized recommendations.")
+if st.button("My List (Dummy)"): st.write("My List: Your watchlist.")
+if st.button("Rewards (Dummy)"): st.write("Rewards: Earn coins for ads!")
+if st.button("Profile (Dummy)"): st.write("Profile: Your account settings.")
+
+# Footer note
+st.caption("ReelShort Clone MVP – Vertical drama playback (test on mobile view).")
