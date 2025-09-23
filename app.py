@@ -34,16 +34,27 @@ conn.commit()
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def trim_video(input_path, output_path, duration=120):
+def split_and_trim_video(input_path, title, duration=60):
     try:
         clip = VideoFileClip(input_path)
-        trimmed_clip = clip.subclip(0, duration)
-        trimmed_clip.write_videofile(output_path, codec="libx264")
+        video_duration = int(clip.duration)
+        episodes = []
+        start = 0
+        part_num = 1
+        while start < video_duration:
+            end = min(start + duration, video_duration)
+            trimmed_path = f"videos/{title}_part{part_num}.mp4"
+            subclip = clip.subclip(start, end)
+            subclip.write_videofile(trimmed_path, codec="libx264")
+            thumbnail_path = f"thumbnails/{title}_part{part_num}.jpg"
+            generate_thumbnail(trimmed_path, thumbnail_path)
+            episodes.append((trimmed_path, thumbnail_path, end - start))
+            start += duration
+            part_num += 1
         clip.close()
-        trimmed_clip.close()
-        return output_path
+        return episodes
     except Exception as e:
-        st.error(f"Error trimming video: {e}")
+        st.error(f"Error splitting and trimming video: {e}")
         return None
 
 def generate_thumbnail(video_path, output_path):
@@ -103,28 +114,25 @@ if page == "Admin Dashboard":
             title = st.text_input("Episode Title")
             genre = st.selectbox("Genre", ["Drama", "Comedy", "Telenovela", "Animation"])
             description = st.text_area("Description (e.g., Cliffhanger Ending Note)")
-            duration = st.slider("Trim to Duration (seconds, 60-120 for 1-2 min)", 60, 120, 120)
             video_file = st.file_uploader("Upload Video (MP4)", type=["mp4"])
-            submit = st.form_submit_button("Upload and Trim")
+            submit = st.form_submit_button("Upload and Split into 60s Episodes")
             if submit and video_file and title and description:
                 # Save uploaded file temporarily
                 temp_path = f"temp_{title}.mp4"
                 with open(temp_path, "wb") as f:
                     f.write(video_file.read())
-                # Trim video
-                trimmed_path = f"videos/{title}.mp4"
-                trimmed_path = trim_video(temp_path, trimmed_path, duration)
-                if trimmed_path:
-                    # Generate thumbnail
-                    thumbnail_path = f"thumbnails/{title}.jpg"
-                    generate_thumbnail(trimmed_path, thumbnail_path)
-                    # Save metadata to SQLite
-                    cursor.execute(
-                        "INSERT INTO videos (title, genre, description, local_path, thumbnail_path, duration) VALUES (?, ?, ?, ?, ?, ?)",
-                        (title, genre, description, trimmed_path, thumbnail_path, duration)
-                    )
-                    conn.commit()
-                    st.success(f"Episode '{title}' uploaded and ready for viewing!")
+                # Split and trim video
+                episodes = split_and_trim_video(temp_path, title, duration=60)
+                if episodes:
+                    for i, (trimmed_path, thumbnail_path, ep_duration) in enumerate(episodes, 1):
+                        ep_title = f"{title} Part {i}"
+                        ep_description = f"{description} (Part {i})"
+                        cursor.execute(
+                            "INSERT INTO videos (title, genre, description, local_path, thumbnail_path, duration) VALUES (?, ?, ?, ?, ?, ?)",
+                            (ep_title, genre, ep_description, trimmed_path, thumbnail_path, ep_duration)
+                        )
+                        conn.commit()
+                    st.success(f"Video '{title}' split into {len(episodes)} episodes and uploaded!")
                     os.remove(temp_path)  # Clean up temp file
     else:
         if password:
