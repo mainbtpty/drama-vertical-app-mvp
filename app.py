@@ -6,6 +6,7 @@ from moviepy.editor import VideoFileClip
 from PIL import Image
 from io import BytesIO
 import base64
+import time
 
 # Initialize directories
 os.makedirs("videos", exist_ok=True)
@@ -41,21 +42,28 @@ def split_and_trim_video(input_path, title, duration=60):
         episodes = []
         start = 0
         part_num = 1
-        while start < video_duration:
+        total_parts = (video_duration + duration - 1) // duration  # Ceiling division
+        progress_bar = st.progress(0)
+        for i in range(total_parts):
             end = min(start + duration, video_duration)
             trimmed_path = f"videos/{title}_part{part_num}.mp4"
-            subclip = clip.subclip(start, end)
-            subclip.write_videofile(trimmed_path, codec="libx264")
-            thumbnail_path = f"thumbnails/{title}_part{part_num}.jpg"
-            generate_thumbnail(trimmed_path, thumbnail_path)
-            episodes.append((trimmed_path, thumbnail_path, end - start))
-            start += duration
-            part_num += 1
+            with st.spinner(f"Trimming part {part_num}/{total_parts}..."):
+                subclip = clip.subclip(start, end)
+                subclip.write_videofile(trimmed_path, codec="libx264", verbose=False)
+                thumbnail_path = f"thumbnails/{title}_part{part_num}.jpg"
+                generate_thumbnail(trimmed_path, thumbnail_path)
+                episodes.append((trimmed_path, thumbnail_path, end - start))
+                start += duration
+                part_num += 1
+                progress_bar.progress((i + 1) / total_parts)
+                time.sleep(0.1)  # Small delay for UI update
         clip.close()
         return episodes
     except Exception as e:
         st.error(f"Error splitting and trimming video: {e}")
         return None
+    finally:
+        progress_bar.empty()
 
 def generate_thumbnail(video_path, output_path):
     try:
@@ -114,26 +122,31 @@ if page == "Admin Dashboard":
             title = st.text_input("Episode Title")
             genre = st.selectbox("Genre", ["Drama", "Comedy", "Telenovela", "Animation"])
             description = st.text_area("Description (e.g., Cliffhanger Ending Note)")
-            video_file = st.file_uploader("Upload Video (MP4)", type=["mp4"])
+            video_file = st.file_uploader("Upload Video (MP4, max 10MB)", type=["mp4"])
             submit = st.form_submit_button("Upload and Split into 60s Episodes")
             if submit and video_file and title and description:
-                # Save uploaded file temporarily
-                temp_path = f"temp_{title}.mp4"
-                with open(temp_path, "wb") as f:
-                    f.write(video_file.read())
-                # Split and trim video
-                episodes = split_and_trim_video(temp_path, title, duration=60)
-                if episodes:
-                    for i, (trimmed_path, thumbnail_path, ep_duration) in enumerate(episodes, 1):
-                        ep_title = f"{title} Part {i}"
-                        ep_description = f"{description} (Part {i})"
-                        cursor.execute(
-                            "INSERT INTO videos (title, genre, description, local_path, thumbnail_path, duration) VALUES (?, ?, ?, ?, ?, ?)",
-                            (ep_title, genre, ep_description, trimmed_path, thumbnail_path, ep_duration)
-                        )
-                        conn.commit()
-                    st.success(f"Video '{title}' split into {len(episodes)} episodes and uploaded!")
-                    os.remove(temp_path)  # Clean up temp file
+                # Check file size (Codespaces limit)
+                file_size = video_file.size / (1024 * 1024)  # Convert to MB
+                if file_size > 10:
+                    st.error("File too large! Please upload an MP4 under 10MB.")
+                else:
+                    with st.spinner("Uploading video..."):
+                        temp_path = f"temp_{title}.mp4"
+                        with open(temp_path, "wb") as f:
+                            f.write(video_file.read())
+                    # Split and trim video
+                    episodes = split_and_trim_video(temp_path, title, duration=60)
+                    if episodes:
+                        for i, (trimmed_path, thumbnail_path, ep_duration) in enumerate(episodes, 1):
+                            ep_title = f"{title} Part {i}"
+                            ep_description = f"{description} (Part {i})"
+                            cursor.execute(
+                                "INSERT INTO videos (title, genre, description, local_path, thumbnail_path, duration) VALUES (?, ?, ?, ?, ?, ?)",
+                                (ep_title, genre, ep_description, trimmed_path, thumbnail_path, ep_duration)
+                            )
+                            conn.commit()
+                        st.success(f"Video '{title}' split into {len(episodes)} episodes and uploaded!")
+                        os.remove(temp_path)  # Clean up temp file
     else:
         if password:
             st.error("Incorrect password.")
