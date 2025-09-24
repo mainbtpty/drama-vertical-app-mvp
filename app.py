@@ -6,7 +6,7 @@ st.set_page_config(page_title="ReelShort Clone MVP", layout="centered", initial_
 # Hardcoded 4 videos (20-second drama clips from free Pexels sources via CDN)
 videos = [
     {
-        "url": "https://assets.mixkit.co/videos/preview/mixkit-portrait-of-a-woman-in-a-pool-12493-large.mp4",  # Emotional woman in water (drama feel)
+        "url": "https://m.youtube.com/shorts/w_QJ0ZHlgDQ",  # Emotional woman in water (drama feel)
         "title": "Episode 1: The Secret",
         "genre": "Drama",
         "description": "She dives into danger... will she surface with the truth? (20s cliffhanger)"
