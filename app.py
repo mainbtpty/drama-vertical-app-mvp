@@ -12,7 +12,7 @@ videos = [
         "description": "She uncovers a hidden truth... what will she do next? (25s cliffhanger)"
     },
     {
-        "embed_id": "abc123def",  # Replace with real Short ID
+        "embed_id": "QzIPVZTkibs",  # Replace with real Short ID
         "title": "Episode 2: Shadows Follow",
         "genre": "Thriller",
         "description": "Every step brings danger closer... who's behind it? (20s cliffhanger)"
