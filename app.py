@@ -18,13 +18,13 @@ videos = [
         "description": "Every step brings danger closer... who's behind it? (20s cliffhanger)"
     },
     {
-        "embed_id": "xyz789ghi",  # Replace with real Short ID
+        "embed_id": "Mbjy1OGD4LM",  # Replace with real Short ID
         "title": "Episode 3: Broken Promises",
         "genre": "Drama",
         "description": "One lie shatters everything... can trust be rebuilt? (22s cliffhanger)"
     },
     {
-        "embed_id": "123jkl456",  # Replace with real Short ID
+        "embed_id": "gY_j7ov08mQ",  # Replace with real Short ID
         "title": "Episode 4: Winds of Change",
         "genre": "Romance",
         "description": "The storm reveals her fate... will love prevail? (18s cliffhanger)"
