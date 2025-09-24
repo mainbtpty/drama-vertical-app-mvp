@@ -6,7 +6,7 @@ st.set_page_config(page_title="ReelShort Clone MVP", layout="centered", initial_
 # Hardcoded 4 YouTube Shorts (drama-themed, embeddable IDs)
 videos = [
     {
-        "embed_id": "dQw4w9WgXcQ",  # Replace with real Short ID (e.g., from https://www.youtube.com/shorts/dQw4w9WgXcQ)
+        "embed_id": "w_QJ0ZHlgDQ",  # Replace with real Short ID (e.g., from https://www.youtube.com/shorts/dQw4w9WgXcQ)
         "title": "Episode 1: The Secret",
         "genre": "Drama",
         "description": "She uncovers a hidden truth... what will she do next? (25s cliffhanger)"
