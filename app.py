@@ -3,35 +3,35 @@ import streamlit as st
 # Page config for mobile-like layout
 st.set_page_config(page_title="ReelShort Clone MVP", layout="centered", initial_sidebar_state="collapsed")
 
-# Hardcoded 4 videos (20-second drama clips from free Pexels sources via CDN)
+# Hardcoded 4 YouTube Shorts (drama-themed, embeddable IDs)
 videos = [
     {
-        "url": "https://m.youtube.com/shorts/w_QJ0ZHlgDQ",  # Emotional woman in water (drama feel)
+        "embed_id": "dQw4w9WgXcQ",  # Replace with real Short ID (e.g., from https://www.youtube.com/shorts/dQw4w9WgXcQ)
         "title": "Episode 1: The Secret",
         "genre": "Drama",
-        "description": "She dives into danger... will she surface with the truth? (20s cliffhanger)"
+        "description": "She uncovers a hidden truth... what will she do next? (25s cliffhanger)"
     },
     {
-        "url": "https://assets.mixkit.co/videos/preview/mixkit-woman-walking-in-the-city-469-large.mp4",  # Woman walking in city (tense narrative)
+        "embed_id": "abc123def",  # Replace with real Short ID
         "title": "Episode 2: Shadows Follow",
         "genre": "Thriller",
-        "description": "Every step echoes her past... who's watching? (20s cliffhanger)"
+        "description": "Every step brings danger closer... who's behind it? (20s cliffhanger)"
     },
     {
-        "url": "https://assets.mixkit.co/videos/preview/mixkit-man-sitting-in-profile-123-large.mp4",  # Man in contemplation (emotional drama)
+        "embed_id": "xyz789ghi",  # Replace with real Short ID
         "title": "Episode 3: Broken Promises",
         "genre": "Drama",
-        "description": "One call changes everything... can he forgive? (20s cliffhanger)"
+        "description": "One lie shatters everything... can trust be rebuilt? (22s cliffhanger)"
     },
     {
-        "url": "https://assets.mixkit.co/videos/preview/mixkit-portrait-of-a-girl-blowing-hair-1245-large.mp4",  # Girl in wind (romantic tension)
+        "embed_id": "123jkl456",  # Replace with real Short ID
         "title": "Episode 4: Winds of Change",
         "genre": "Romance",
-        "description": "The breeze whispers secrets... will she listen? (20s cliffhanger)"
+        "description": "The storm reveals her fate... will love prevail? (18s cliffhanger)"
     }
 ]
 
-# CSS for ReelShort-like mobile UI (dark theme, vertical player, icons)
+# CSS for ReelShort-like mobile UI (dark theme, vertical iframe player, icons)
 st.markdown("""
     <style>
         .main { max-width: 360px; margin: auto; background-color: #000; color: #fff; }
@@ -41,7 +41,7 @@ st.markdown("""
         .nav-tab { color: #fff; background: none; border: none; padding: 8px 12px; cursor: pointer; }
         .nav-tab.active { border-bottom: 2px solid #ff4d4d; }
         .video-container { width: 100%; aspect-ratio: 9/16; background: #000; margin: 20px 0; }
-        video { width: 100%; height: 100%; object-fit: cover; }
+        iframe { width: 100%; height: 100%; object-fit: cover; border: none; }
         .episode-info { padding: 10px; background: #111; margin-bottom: 20px; }
         .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 360px; background: #000; display: flex; justify-content: space-around; padding: 10px; border-top: 1px solid #333; }
         .bottom-icon { color: #fff; font-size: 24px; cursor: pointer; }
@@ -49,12 +49,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Header with search bar
+# Header with search bar (dummy)
 st.markdown('<div class="header"><input type="text" class="search-bar" placeholder="Search shows..."></div>', unsafe_allow_html=True)
 
 # Navigation tabs (dummy)
 tab_names = ["Popular", "New", "Ranking", "Categories", "Asian"]
-selected_tab = st.selectbox("Navigation", tab_names, key="nav_tab", format_func=lambda x: x)  # Dummy selectbox styled as tabs
+selected_tab = st.selectbox("Navigation", tab_names, key="nav_tab", format_func=lambda x: x)  # Styled as tabs
 
 # Dummy tab content (same video feed for all)
 st.markdown('<div class="nav-tabs">', unsafe_allow_html=True)
@@ -63,16 +63,15 @@ for tab in tab_names:
     st.markdown(f'<button class="{active_class}">{tab}</button>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Main video feed (hardcoded 4 videos, vertical play)
+# Main video feed (YouTube iframe embed, vertical play)
 if "current_video_index" not in st.session_state:
     st.session_state.current_video_index = 0
 
 video = videos[st.session_state.current_video_index]
+embed_url = f"https://www.youtube.com/embed/{video['embed_id']}?autoplay=1&loop=1&playlist={video['embed_id']}&mute=1&playsinline=1&modestbranding=1&rel=0&controls=1"
 st.markdown(f"""
     <div class="video-container">
-        <video controls autoplay loop muted>
-            <source src="{video['url']}" type="video/mp4">
-        </video>
+        <iframe src="{embed_url}" allowfullscreen></iframe>
     </div>
     <div class="episode-info">
         <h3>{video['title']}</h3>
