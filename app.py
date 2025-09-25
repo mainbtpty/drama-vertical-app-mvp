@@ -1,4 +1,6 @@
 import streamlit as st
+import base64
+import os
 
 # Page config for mobile-like layout
 st.set_page_config(page_title="ReelShort Clone MVP", layout="centered", initial_sidebar_state="collapsed")
@@ -34,7 +36,7 @@ videos = [
 # Check if video files exist in directory
 for video in videos:
     if not os.path.exists(video["file"]):
-        st.error(f"Video file {video['file']} not found in the app directory. Please ensure all MP4s are uploaded.")
+        st.error(f"Video file {video['file']} not found in the app directory. Please ensure all MP4s (File0.mp4, File1.mp4, File2.mp4, File3.mp4) are uploaded to the repo root.")
         st.stop()
 
 # CSS for ReelShort-like mobile UI (optimized for iPhone/Android Chrome)
@@ -196,7 +198,7 @@ try:
     video_b64 = base64.b64encode(video_data).decode()
     st.markdown(f"""
         <div class="video-container">
-            <video controls autoplay loop muted playsinline>
+            <video controls autoplay loop muted playsinline id="video-player">
                 <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
@@ -214,13 +216,13 @@ except Exception as e:
 # Navigation buttons (touch-friendly)
 col1, col2 = st.columns([1, 1])
 with col1:
-    if st.button("← Previous", key="prev", use_container_width=True):
+    if st.button("← Previous", key="prev_button"):
         st.session_state.current_video_index = (st.session_state.current_video_index - 1) % len(videos)
-        st.experimental_rerun()  # Use experimental_rerun for better refresh
+        st.rerun()
 with col2:
-    if st.button("Next →", key="next", use_container_width=True):
+    if st.button("Next →", key="next_button"):
         st.session_state.current_video_index = (st.session_state.current_video_index + 1) % len(videos)
-        st.experimental_rerun()  # Use experimental_rerun for better refresh
+        st.rerun()
 
 # Bottom navigation bar with icons (dummy, touch-friendly)
 st.markdown("""
