@@ -1,4 +1,6 @@
 import streamlit as st
+import base64
+import os
 
 # Page config for mobile-like layout
 st.set_page_config(page_title="ReelShort Clone MVP", layout="centered", initial_sidebar_state="collapsed")
@@ -172,6 +174,13 @@ st.markdown("""
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 """, unsafe_allow_html=True)
 
+# Initialize session state
+if "current_video_index" not in st.session_state:
+    st.session_state.current_video_index = 0
+
+# Debug: Display current video index
+st.write(f"Debug: Current video index: {st.session_state.current_video_index}")
+
 # Header with search bar
 st.markdown('<div class="header"><input type="text" class="search-bar" placeholder="Search shows..."></div>', unsafe_allow_html=True)
 
@@ -185,11 +194,7 @@ for tab in tab_names:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # Main video feed (local MP4s, vertical play)
-if "current_video_index" not in st.session_state:
-    st.session_state.current_video_index = 0
-
 video = videos[st.session_state.current_video_index]
-# Convert local MP4 to base64 for embedding
 try:
     with open(video["file"], "rb") as f:
         video_data = f.read()
@@ -216,11 +221,13 @@ col1, col2 = st.columns([1, 1])
 with col1:
     if st.button("← Previous", key="prev", use_container_width=True):
         st.session_state.current_video_index = (st.session_state.current_video_index - 1) % len(videos)
-        st.experimental_rerun()  # Use experimental_rerun for better refresh
+        st.write(f"Debug: Switching to video index {st.session_state.current_video_index}")
+        st.rerun()
 with col2:
     if st.button("Next →", key="next", use_container_width=True):
         st.session_state.current_video_index = (st.session_state.current_video_index + 1) % len(videos)
-        st.experimental_rerun()  # Use experimental_rerun for better refresh
+        st.write(f"Debug: Switching to video index {st.session_state.current_video_index}")
+        st.rerun()
 
 # Bottom navigation bar with icons (dummy, touch-friendly)
 st.markdown("""
