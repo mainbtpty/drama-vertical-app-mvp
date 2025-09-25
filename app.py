@@ -1,5 +1,4 @@
 import streamlit as st
-import base64
 import os
 
 # Page config for mobile-like layout
@@ -190,19 +189,16 @@ st.markdown('</div>', unsafe_allow_html=True)
 if "current_video_index" not in st.session_state:
     st.session_state.current_video_index = 0
 
+# Debug: Display current video index
+st.write(f"Debug: Current video index: {st.session_state.current_video_index}")
+
 video = videos[st.session_state.current_video_index]
-# Convert local MP4 to base64 for embedding
+# Use st.video for local MP4s to avoid base64 rendering issues
 try:
-    with open(video["file"], "rb") as f:
-        video_data = f.read()
-    video_b64 = base64.b64encode(video_data).decode()
+    st.markdown('<div class="video-container">', unsafe_allow_html=True)
+    st.video(video["file"], format="video/mp4", start_time=0)
+    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown(f"""
-        <div class="video-container">
-            <video controls autoplay loop muted playsinline id="video-player">
-                <source src="data:video/mp4;base64,{video_b64}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-        </div>
         <div class="episode-info">
             <h3>{video['title']}</h3>
             <p><strong>Genre:</strong> {video['genre']}</p>
