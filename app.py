@@ -1,6 +1,4 @@
 import streamlit as st
-import base64
-import os
 
 # Page config for mobile-like layout
 st.set_page_config(page_title="ReelShort Clone MVP", layout="centered", initial_sidebar_state="collapsed")
@@ -218,11 +216,11 @@ col1, col2 = st.columns([1, 1])
 with col1:
     if st.button("← Previous", key="prev", use_container_width=True):
         st.session_state.current_video_index = (st.session_state.current_video_index - 1) % len(videos)
-        st.rerun()
+        st.experimental_rerun()  # Use experimental_rerun for better refresh
 with col2:
     if st.button("Next →", key="next", use_container_width=True):
         st.session_state.current_video_index = (st.session_state.current_video_index + 1) % len(videos)
-        st.rerun()
+        st.experimental_rerun()  # Use experimental_rerun for better refresh
 
 # Bottom navigation bar with icons (dummy, touch-friendly)
 st.markdown("""
